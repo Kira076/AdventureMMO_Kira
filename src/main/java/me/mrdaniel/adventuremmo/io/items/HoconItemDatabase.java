@@ -96,7 +96,7 @@ public class HoconItemDatabase extends MMOObject implements ItemDatabase {
 	@Nonnull
 	public Optional<ToolData> getData(@Nullable final ItemStack item) {
 		if (item == null) { return Optional.of(new ToolData(ToolTypes.HAND)); }
-		return Optional.ofNullable(this.tools.get(item.getItem()));
+		return Optional.ofNullable(this.tools.get(item.getType()));
 	}
 
 	@Override

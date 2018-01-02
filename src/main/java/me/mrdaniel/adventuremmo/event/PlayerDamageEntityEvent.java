@@ -2,9 +2,12 @@ package me.mrdaniel.adventuremmo.event;
 
 import javax.annotation.Nonnull;
 
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.event.cause.EventContext;
+import org.spongepowered.api.event.cause.EventContextKeys;
 import org.spongepowered.api.event.impl.AbstractEvent;
 
 import me.mrdaniel.adventuremmo.AdventureMMO;
@@ -26,7 +29,7 @@ public class PlayerDamageEntityEvent extends AbstractEvent {
 		this.damage = damage;
 		this.death = death;
 
-		this.cause = Cause.source(mmo.getContainer()).build();
+		this.cause = Sponge.getCauseStackManager().getCurrentCause();
 	}
 
 	@Nonnull

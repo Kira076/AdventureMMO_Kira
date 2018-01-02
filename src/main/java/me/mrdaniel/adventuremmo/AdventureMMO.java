@@ -8,17 +8,30 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
+import com.google.common.reflect.TypeToken;
+import me.mrdaniel.adventuremmo.data.MMOKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.Game;
 import org.spongepowered.api.command.args.GenericArguments;
 import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.config.ConfigDir;
+import org.spongepowered.api.data.DataQuery;
+import org.spongepowered.api.data.DataRegistration;
+import org.spongepowered.api.data.key.Key;
+import org.spongepowered.api.data.value.ValueFactory;
+import org.spongepowered.api.data.value.mutable.ListValue;
+import org.spongepowered.api.data.value.mutable.MapValue;
+import org.spongepowered.api.data.value.mutable.Value;
 import org.spongepowered.api.event.Listener;
+import org.spongepowered.api.event.game.GameRegistryEvent;
 import org.spongepowered.api.event.game.GameReloadEvent;
+import org.spongepowered.api.event.game.state.GameConstructionEvent;
 import org.spongepowered.api.event.game.state.GameInitializationEvent;
 import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
 import org.spongepowered.api.event.game.state.GameStoppingEvent;
+import org.spongepowered.api.item.enchantment.Enchantment;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.plugin.PluginContainer;
 import org.spongepowered.api.text.Text;
@@ -105,24 +118,47 @@ public class AdventureMMO {
 	}
 
 	@Listener
-	public void onPreInit(@Nullable final GamePreInitializationEvent e) {
+	public void onKeysRegister(GameRegistryEvent.Register<Key> event) {
+		MMOKeys.DELAYS = Key.builder().type(new TypeToken<MapValue<String, Long>>(){}).id("mmo:delays").name("MMO Delays").query(DataQuery.of("delays")).build();
+		MMOKeys.ABILITIES = Key.builder().type(new TypeToken<MapValue<String, Long>>(){}).id("mmo:abilities").name("MMO Abilities").query(DataQuery.of("abilities")).build();
+
+		MMOKeys.ACTION_BAR = Key.builder().type(new TypeToken<Value<Boolean>>(){}).id("mmo:action_bar").name("MMO Action Bar").query(DataQuery.of("action_bar")).build();
+		MMOKeys.SCOREBOARD = Key.builder().type(new TypeToken<Value<Boolean>>(){}).id("mmo:scoreboard").name("MMO Scoreboard").query(DataQuery.of("scoreboard")).build();
+		MMOKeys.SCOREBOARD_PERMANENT = Key.builder().type(new TypeToken<Value<Boolean>>(){}).id("mmo:scoreboard_permanent").name("MMO Scoreboard Permanent").query(DataQuery.of("scoreboard_permanent")).build();
+
+		// SuperToolData
+		MMOKeys.ENCHANTS = Key.builder().type(new TypeToken<ListValue<Enchantment>>(){}).id("mmo:enchants").name("MMO Enchants").query(DataQuery.of("enchants")).build();
+		MMOKeys.NAME = Key.builder().type(new TypeToken<Value<String>>(){}).id("mmo:name").name("MMO Name").query(DataQuery.of("name")).build();
+		MMOKeys.DURABILITY = Key.builder().type(new TypeToken<Value<Integer>>(){}).id("mmo:durability").name("MMO Durability").query(DataQuery.of("durability")).build();
+	}
+
+	@Listener
+	public void onPreInit(final GamePreInitializationEvent e) {
 		this.logger.info("Registering custom data...");
 
-		this.game.getDataManager().register(MMOData.class, ImmutableMMOData.class, new MMODataBuilder());
-		this.game.getDataManager().register(SuperToolData.class, ImmutableSuperToolData.class, new SuperToolDataBuilder());
+		DataRegistration.builder()
+				.dataClass(MMOData.class)
+				.immutableClass(ImmutableMMOData.class)
+				.builder(new MMODataBuilder())
+				.buildAndRegister(container);
+		DataRegistration.builder()
+				.dataClass(SuperToolData.class)
+				.immutableClass(ImmutableSuperToolData.class)
+				.builder(new SuperToolDataBuilder())
+				.buildAndRegister(container);
 
-		this.game.getRegistry().registerModule(SkillType.class, new SkillTypeRegistryModule());
-		this.game.getRegistry().registerModule(ToolType.class, new ToolTypeRegistryModule());
-		this.game.getRegistry().registerModule(Ability.class, new AbilityRegistryModule());
-		this.game.getRegistry().registerModule(Setting.class, new SettingRegistryModule());
+		Sponge.getRegistry().registerModule(SkillType.class, new SkillTypeRegistryModule());
+		Sponge.getRegistry().registerModule(ToolType.class, new ToolTypeRegistryModule());
+		Sponge.getRegistry().registerModule(Ability.class, new AbilityRegistryModule());
+		Sponge.getRegistry().registerModule(Setting.class, new SettingRegistryModule());
 
-		this.game.getServiceManager().setProvider(this, AdventureMMOService.class, new AdventureMMOService(this));
+		Sponge.getServiceManager().setProvider(this, AdventureMMOService.class, new AdventureMMOService(this));
 
 		this.logger.info("Registered custom data successfully.");
 	}
 
 	@Listener
-	public void onInit(@Nullable final GameInitializationEvent e) {
+	public void onInit(final GameInitializationEvent e) {
 		this.logger.info("Loading plugin...");
 
 		final long startuptime = System.currentTimeMillis();
@@ -146,32 +182,32 @@ public class AdventureMMO {
 		this.choices = new ChoiceMaps();
 
 		// Registering Commands
-		this.game.getCommandManager().register(this, CommandSpec.builder()
+		Sponge.getCommandManager().register(this, CommandSpec.builder()
 				.description(Text.of(TextColors.BLUE, "AdventureMMO | Skills Command"))
 				.arguments(GenericArguments.optionalWeak(GenericArguments.choices(Text.of("skill"), this.choices.getSkills())))
 				.executor(new CommandSkills(this))
 				.build(), config.getNode("commands", "skills").getList(obj -> (String)obj));
 
-		this.game.getCommandManager().register(this, CommandSpec.builder()
+		Sponge.getCommandManager().register(this, CommandSpec.builder()
 				.description(Text.of(TextColors.BLUE, "AdventureMMO | Top Command"))
 				.arguments(GenericArguments.optionalWeak(GenericArguments.choices(Text.of("skill"), this.choices.getSkills())))
 				.executor(new CommandTop(this))
 				.build(), config.getNode("commands", "tops").getList(obj -> (String)obj));
 
-		this.game.getCommandManager().register(this, CommandSpec.builder()
+		Sponge.getCommandManager().register(this, CommandSpec.builder()
 				.description(Text.of(TextColors.BLUE, "AdventureMMO | Settings Command"))
 				.executor(new CommandSettings(this))
 				.build(), config.getNode("commands", "settings").getList(obj -> (String)obj));
 
 		SkillTypes.VALUES.stream().filter(skill -> config.getNode("commands", skill.getId()).getBoolean(true)).forEach(skill -> {
-			this.game.getCommandManager().register(this, CommandSpec.builder()
+			Sponge.getCommandManager().register(this, CommandSpec.builder()
 					.description(Text.of(TextColors.BLUE, "AdventureMMO | ", skill.getName(), " Command"))
 					.executor(new CommandSkill(this, skill))
 					.build(), skill.getId());
 		});
 
 		// Admin Commands
-		this.game.getCommandManager().register(this, CommandSpec.builder()
+		Sponge.getCommandManager().register(this, CommandSpec.builder()
 				.child(CommandSpec.builder().description(Text.of(TextColors.BLUE, "AdventureMMO | Reload Command")).permission("mmo.admin.reload").executor(new CommandReload(this)).build(), "reload")
 				.child(CommandSpec.builder().description(Text.of(TextColors.BLUE, "AdventureMMO | View Command")).permission("mmo.admin.view").arguments(GenericArguments.user(Text.of("user"))).executor(new CommandView(this)).build(), "view")
 				.child(CommandSpec.builder().description(Text.of(TextColors.BLUE, "AdventureMMO | Set Command")).permission("mmo.admin.set").arguments(GenericArguments.user(Text.of("user")), GenericArguments.choices(Text.of("skill"), this.choices.getSkills()), GenericArguments.integer(Text.of("level")), GenericArguments.optionalWeak(GenericArguments.integer(Text.of("exp")))).executor(new CommandSet(this)).build(), "set")
@@ -183,12 +219,12 @@ public class AdventureMMO {
 
 		// Registering Listeners
 		SkillTypes.VALUES.forEach(skill -> this.game.getEventManager().registerListeners(this, skill.getListener().apply(this, config)));
-		this.game.getEventManager().registerListeners(this, new ClientListener(this));
-		this.game.getEventManager().registerListeners(this, new AbilitiesListener(this, config));
-		this.game.getEventManager().registerListeners(this, new WorldListener(this));
-		this.game.getEventManager().registerListeners(this, this.doubledrops);
+		Sponge.getEventManager().registerListeners(this, new ClientListener(this));
+		Sponge.getEventManager().registerListeners(this, new AbilitiesListener(this, config));
+		Sponge.getEventManager().registerListeners(this, new WorldListener(this));
+		Sponge.getEventManager().registerListeners(this, this.doubledrops);
 		if (config.getNode("economy", "enabled").getBoolean()) {
-			try { this.game.getEventManager().registerListeners(this, new EconomyListener(this, config)); }
+			try { Sponge.getEventManager().registerListeners(this, new EconomyListener(this, config)); }
 			catch (final ServiceException exc) { this.logger.error("No Economy Service was found! Install one or disable economy in the config file: {}", exc); }
 		}
 		this.logger.info("Loaded plugin successfully in {} milliseconds.", System.currentTimeMillis() - startuptime);
@@ -196,7 +232,7 @@ public class AdventureMMO {
 
 	@Listener
 	public void onStopping(@Nullable final GameStoppingEvent e) {
-		this.game.getServer().getOnlinePlayers().forEach(p -> ItemUtils.restoreSuperTool(p, this.container));
+		Sponge.getServer().getOnlinePlayers().forEach(p -> ItemUtils.restoreSuperTool(p, this.container));
 		this.playerdata.unloadAll();
 	}
 
@@ -206,9 +242,9 @@ public class AdventureMMO {
 
 		this.onStopping(null);
 
-		this.game.getEventManager().unregisterPluginListeners(this);
-		this.game.getScheduler().getScheduledTasks(this).forEach(task -> task.cancel());
-		this.game.getCommandManager().getOwnedBy(this).forEach(this.game.getCommandManager()::removeMapping);
+		Sponge.getEventManager().unregisterPluginListeners(this);
+		Sponge.getScheduler().getScheduledTasks(this).forEach(task -> task.cancel());
+		Sponge.getCommandManager().getOwnedBy(this).forEach(this.game.getCommandManager()::removeMapping);
 
 		this.onInit(null);
 

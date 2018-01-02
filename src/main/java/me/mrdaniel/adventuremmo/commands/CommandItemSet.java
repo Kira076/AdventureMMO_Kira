@@ -29,7 +29,7 @@ public class CommandItemSet extends PlayerCommand {
 		Optional<ItemStack> hand = p.getItemInHand(HandTypes.MAIN_HAND);
 		if (!hand.isPresent()) { p.sendMessage(Text.of(TextColors.RED, "You must be holding an item to use this command")); return; }
 
-		ItemType item = hand.get().getItem();
+		ItemType item = hand.get().getType();
 		ToolType tool = args.<ToolType>getOne("tooltype").get();
 
 		this.mmo.getItemDatabase().set(item, tool);

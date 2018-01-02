@@ -3,8 +3,11 @@ package me.mrdaniel.adventuremmo.event;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.event.cause.EventContext;
+import org.spongepowered.api.event.cause.EventContextKeys;
 import org.spongepowered.api.event.impl.AbstractEvent;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -28,7 +31,7 @@ public class BreakBlockEvent extends AbstractEvent {
 		this.block = block;
 		this.tool = tool;
 
-		this.cause = Cause.source(mmo.getContainer()).build();
+		this.cause = Sponge.getCauseStackManager().getCurrentCause();
 	}
 
 	@Nonnull
