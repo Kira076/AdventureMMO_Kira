@@ -9,6 +9,7 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import com.google.common.reflect.TypeToken;
+import me.mrdaniel.adventuremmo.catalogtypes.abilities.abilities.SuperTool;
 import me.mrdaniel.adventuremmo.data.MMOKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,7 +119,15 @@ public class AdventureMMO {
 	}
 
 	@Listener
-	public void onKeysRegister(GameRegistryEvent.Register<Key> event) {
+	public void onGameConstruction(GameConstructionEvent event) {
+		Sponge.getRegistry().registerModule(SkillType.class, new SkillTypeRegistryModule());
+		Sponge.getRegistry().registerModule(ToolType.class, new ToolTypeRegistryModule());
+		Sponge.getRegistry().registerModule(Ability.class, new AbilityRegistryModule());
+		Sponge.getRegistry().registerModule(Setting.class, new SettingRegistryModule());
+	}
+/*
+	@Listener
+	public void onKeysRegister(GameRegistryEvent.Register<Key<?>> event) {
 		MMOKeys.DELAYS = Key.builder().type(new TypeToken<MapValue<String, Long>>(){}).id("mmo:delays").name("MMO Delays").query(DataQuery.of("delays")).build();
 		MMOKeys.ABILITIES = Key.builder().type(new TypeToken<MapValue<String, Long>>(){}).id("mmo:abilities").name("MMO Abilities").query(DataQuery.of("abilities")).build();
 
@@ -130,27 +139,46 @@ public class AdventureMMO {
 		MMOKeys.ENCHANTS = Key.builder().type(new TypeToken<ListValue<Enchantment>>(){}).id("mmo:enchants").name("MMO Enchants").query(DataQuery.of("enchants")).build();
 		MMOKeys.NAME = Key.builder().type(new TypeToken<Value<String>>(){}).id("mmo:name").name("MMO Name").query(DataQuery.of("name")).build();
 		MMOKeys.DURABILITY = Key.builder().type(new TypeToken<Value<Integer>>(){}).id("mmo:durability").name("MMO Durability").query(DataQuery.of("durability")).build();
-	}
+	}*/
 
 	@Listener
 	public void onPreInit(final GamePreInitializationEvent e) {
 		this.logger.info("Registering custom data...");
 
-		DataRegistration.builder()
-				.dataClass(MMOData.class)
-				.immutableClass(ImmutableMMOData.class)
-				.builder(new MMODataBuilder())
-				.buildAndRegister(container);
-		DataRegistration.builder()
-				.dataClass(SuperToolData.class)
-				.immutableClass(ImmutableSuperToolData.class)
-				.builder(new SuperToolDataBuilder())
-				.buildAndRegister(container);
+		MMOKeys.DELAYS = Key.builder().type(new TypeToken<MapValue<String, Long>>(){}).id("mmo:delays").name("MMO Delays").query(DataQuery.of("delays")).build();
+		MMOKeys.ABILITIES = Key.builder().type(new TypeToken<MapValue<String, Long>>(){}).id("mmo:abilities").name("MMO Abilities").query(DataQuery.of("abilities")).build();
 
-		Sponge.getRegistry().registerModule(SkillType.class, new SkillTypeRegistryModule());
-		Sponge.getRegistry().registerModule(ToolType.class, new ToolTypeRegistryModule());
-		Sponge.getRegistry().registerModule(Ability.class, new AbilityRegistryModule());
-		Sponge.getRegistry().registerModule(Setting.class, new SettingRegistryModule());
+		MMOKeys.ACTION_BAR = Key.builder().type(new TypeToken<Value<Boolean>>(){}).id("mmo:action_bar").name("MMO Action Bar").query(DataQuery.of("action_bar")).build();
+		MMOKeys.SCOREBOARD = Key.builder().type(new TypeToken<Value<Boolean>>(){}).id("mmo:scoreboard").name("MMO Scoreboard").query(DataQuery.of("scoreboard")).build();
+		MMOKeys.SCOREBOARD_PERMANENT = Key.builder().type(new TypeToken<Value<Boolean>>(){}).id("mmo:scoreboard_permanent").name("MMO Scoreboard Permanent").query(DataQuery.of("scoreboard_permanent")).build();
+
+		// SuperToolData
+		MMOKeys.ENCHANTS = Key.builder().type(new TypeToken<ListValue<Enchantment>>(){}).id("mmo:enchants").name("MMO Enchants").query(DataQuery.of("enchants")).build();
+		MMOKeys.NAME = Key.builder().type(new TypeToken<Value<String>>(){}).id("mmo:name").name("MMO Name").query(DataQuery.of("name")).build();
+		MMOKeys.DURABILITY = Key.builder().type(new TypeToken<Value<Integer>>(){}).id("mmo:durability").name("MMO Durability").query(DataQuery.of("durability")).build();
+
+		Sponge.getEventManager().registerListeners(this, new MMOData());
+
+		DataRegistration mdr =
+			DataRegistration.builder()
+					.dataClass(MMOData.class)
+					.immutableClass(ImmutableMMOData.class)
+					.builder(new MMODataBuilder())
+					.manipulatorId("mmodata")
+					.dataName("MMO Data")
+					.buildAndRegister(container);
+
+		DataRegistration stdr =
+			DataRegistration.builder()
+					.dataClass(SuperToolData.class)
+					.immutableClass(ImmutableSuperToolData.class)
+					.builder(new SuperToolDataBuilder())
+					.manipulatorId("stdata")
+					.dataName("Super Tool Data")
+					.buildAndRegister(container);
+
+		Sponge.getDataManager().registerLegacyManipulatorIds(MMOData.class.getName(), mdr);
+		Sponge.getDataManager().registerLegacyManipulatorIds(SuperToolData.class.getName(), stdr);
 
 		Sponge.getServiceManager().setProvider(this, AdventureMMOService.class, new AdventureMMOService(this));
 
