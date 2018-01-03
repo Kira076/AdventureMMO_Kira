@@ -159,26 +159,21 @@ public class AdventureMMO {
 
 		Sponge.getEventManager().registerListeners(this, new MMOData());
 
-		DataRegistration mdr =
-			DataRegistration.builder()
-					.dataClass(MMOData.class)
-					.immutableClass(ImmutableMMOData.class)
-					.builder(new MMODataBuilder())
-					.manipulatorId("mmodata")
-					.dataName("MMO Data")
-					.buildAndRegister(container);
+		DataRegistration.builder()
+				.dataClass(MMOData.class)
+				.immutableClass(ImmutableMMOData.class)
+				.builder(new MMODataBuilder())
+				.manipulatorId("mmodata")
+				.dataName("MMO Data")
+				.buildAndRegister(this.container);
 
-		DataRegistration stdr =
-			DataRegistration.builder()
-					.dataClass(SuperToolData.class)
-					.immutableClass(ImmutableSuperToolData.class)
-					.builder(new SuperToolDataBuilder())
-					.manipulatorId("stdata")
-					.dataName("Super Tool Data")
-					.buildAndRegister(container);
-
-		Sponge.getDataManager().registerLegacyManipulatorIds(MMOData.class.getName(), mdr);
-		Sponge.getDataManager().registerLegacyManipulatorIds(SuperToolData.class.getName(), stdr);
+		DataRegistration.builder()
+				.dataClass(SuperToolData.class)
+				.immutableClass(ImmutableSuperToolData.class)
+				.builder(new SuperToolDataBuilder())
+				.manipulatorId("stdata")
+				.dataName("Super Tool Data")
+				.buildAndRegister(this.container);
 
 		Sponge.getServiceManager().setProvider(this, AdventureMMOService.class, new AdventureMMOService(this));
 
